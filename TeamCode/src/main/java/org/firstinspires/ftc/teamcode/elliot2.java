@@ -38,6 +38,19 @@ public class elliot2 extends LinearOpMode {
         tapeMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         tapeMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         tapeMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+        MotorConfigurationType motorConfigurationType = tapeMotor.getMotorType().clone();
+        motorConfigurationType.setGearing(36.25);
+        motorConfigurationType.setTicksPerRev(288);
+        motorConfigurationType.setMaxRPM(137);
+        motorConfigurationType.setOrientation(Rotation.CCW);
+        tapeMotor.setMotorType(motorConfigurationType);
+
+        /* Now need to figure this out! */
+        //@ExpansionHubMotorControllerVelocityParams(P=10, I=3, D=0)
+        //@ExpansionHubMotorControllerPositionParams(P=10, I=0.05, D=0)
+        //~~~~~~~~~~~~~~~~~~~
+
         //10 inches = 314 encoder clicks
        // tapeMotor.setMotorType(@MotorType(ticksPerRev = 288, gearing = 36.25, maxRPM = 137, orientation = Rotation.CCW));
         //tapeMotor.setMotorType(new MotorConfigurationType().setGearing(36.25));
