@@ -21,9 +21,10 @@ public class elliot2 extends LinearOpMode {
     public void runOpMode() {
 
         boolean Y_previous=false;
+        int tapePos = 0;  // moved
         servoTest =hardwareMap.get(Servo.class,"servo0");
-        tapeMotor =hardwareMap.get(DcMotor.class, "motor0B");
-        tapeMotor.setDirection(DcMotorSimple.Direction.FORWARD);
+        tapeMotor =hardwareMap.get(DcMotor.class, "motor3B"); //0B
+        tapeMotor.setDirection(DcMotorSimple.Direction.REVERSE);  // FORWARD
         tapeMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         tapeMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         tapeMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -52,15 +53,17 @@ public class elliot2 extends LinearOpMode {
             if (motorPower==0 && manualControl) tapeMotor.setPower(0);
 
             if (gamepad1.y && !Y_previous){
+                manualControl = false;  //oops
                 tapeMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-                int tapePos = tapeMotor.getCurrentPosition();
+                tapePos = tapeMotor.getCurrentPosition();
                 tapePos+=(int)encPerInch;
                 tapeMotor.setTargetPosition(tapePos);
-                tapeMotor.setPower(.2);
+                tapeMotor.setPower(1);
             }
             Y_previous=gamepad1.y;
 
-
+            telemetry.addData("tapePos", tapePos);
+            telemetry.addData("motoPos", tapeMotor.getCurrentPosition());
             telemetry.addData("Status", "Run Time: " + runtime.toString());
             telemetry.update();
         }
