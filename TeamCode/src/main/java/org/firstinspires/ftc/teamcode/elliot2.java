@@ -2,18 +2,12 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
-import com.qualcomm.robotcore.hardware.HardwareDevice;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.PIDCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
-import com.qualcomm.robotcore.hardware.configuration.DistributorInfo;
-import com.qualcomm.robotcore.hardware.configuration.ExpansionHubMotorControllerPositionParams;
-import com.qualcomm.robotcore.hardware.configuration.ExpansionHubMotorControllerVelocityParams;
-import com.qualcomm.robotcore.hardware.configuration.annotations.DeviceProperties;
-import com.qualcomm.robotcore.hardware.configuration.annotations.MotorType;
 import com.qualcomm.robotcore.hardware.configuration.typecontainers.MotorConfigurationType;
 import com.qualcomm.robotcore.util.ElapsedTime;
-import com.qualcomm.hardware.motors.RevRoboticsCoreHexMotor;
+//import com.qualcomm.hardware.motors.RevRoboticsCoreHexMotor;
 
 import org.firstinspires.ftc.robotcore.external.navigation.Rotation;
 
@@ -23,7 +17,7 @@ public class elliot2 extends LinearOpMode {
 
     private ElapsedTime runtime = new ElapsedTime();
     Servo servoTest;
-    DcMotor tapeMotor;
+    DcMotorEx tapeMotor;  //, testMotor;
     float encPerInch = 31.4F;
     boolean manualControl = true;
 
@@ -31,33 +25,15 @@ public class elliot2 extends LinearOpMode {
     public void runOpMode() {
 
         boolean Y_previous=false;
+        boolean X_previous=false;
         int tapePos = 0;  // moved
-        servoTest =hardwareMap.get(Servo.class,"servo0");
-        tapeMotor =hardwareMap.get(DcMotor.class, "motor3B"); //0B
-        tapeMotor.setDirection(DcMotorSimple.Direction.REVERSE);  // FORWARD
-        tapeMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        tapeMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        tapeMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-
-        MotorConfigurationType motorConfigurationType = tapeMotor.getMotorType().clone();
-        motorConfigurationType.setGearing(36.25);
-        motorConfigurationType.setTicksPerRev(288);
-        motorConfigurationType.setMaxRPM(137);
-        motorConfigurationType.setOrientation(Rotation.CCW);
-        tapeMotor.setMotorType(motorConfigurationType);
-
-        /* Now need to figure this out! */
-        //@ExpansionHubMotorControllerVelocityParams(P=10, I=3, D=0)
-        //@ExpansionHubMotorControllerPositionParams(P=10, I=0.05, D=0)
-        //~~~~~~~~~~~~~~~~~~~
-
-        //10 inches = 314 encoder clicks
-       // tapeMotor.setMotorType(@MotorType(ticksPerRev = 288, gearing = 36.25, maxRPM = 137, orientation = Rotation.CCW));
-        //tapeMotor.setMotorType(new MotorConfigurationType().setGearing(36.25));
-       // tapeMotor.setMotorType(RevRoboticsCoreHexMotor);
-        //new MotorConfigurationType().setTicksPerRev(288)
-        //288, 36.25, 137, Rotation.CCW
-       // ticksPerRev=288, gearing=36.25, maxRPM=137, orientation=Rotation.CCW)
+        servoTest=hardwareMap.get(Servo.class,"servo0");
+        tapeMotor=hardwareMap.get(DcMotorEx.class, "motor3B"); //0B
+        tapeMotor.setDirection(DcMotorEx.Direction.FORWARD);
+        tapeMotor.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
+        tapeMotor.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
+        tapeMotor.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+        overrideMotorSettings(tapeMotor);
 
         //waitForStart();
         while (!isStarted()) {
@@ -73,8 +49,8 @@ public class elliot2 extends LinearOpMode {
             double motorPower = gamepad1.right_trigger - gamepad1.left_trigger;
 
             if (motorPower!=0) {
-                if (tapeMotor.getMode()!= DcMotor.RunMode.RUN_USING_ENCODER) {
-                    tapeMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+                if (tapeMotor.getMode()!= DcMotorEx.RunMode.RUN_USING_ENCODER) {
+                    tapeMotor.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
                 }
                 tapeMotor.setPower(motorPower);
                 manualControl = true;
@@ -83,7 +59,7 @@ public class elliot2 extends LinearOpMode {
 
             if (gamepad1.y && !Y_previous){
                 manualControl = false;  //oops
-                tapeMotor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                tapeMotor.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
                 tapePos = tapeMotor.getCurrentPosition();
                 tapePos+=(int)encPerInch;
                 tapeMotor.setTargetPosition(tapePos);
@@ -91,13 +67,54 @@ public class elliot2 extends LinearOpMode {
             }
             Y_previous=gamepad1.y;
 
+            if (gamepad1.x && !X_previous){
+                if (manualControl) {
+                    manualControl = false;
+                    tapeMotor.setTargetPosition(tapeMotor.getCurrentPosition());
+                    tapeMotor.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
+                }
+                tapePos = tapeMotor.getTargetPosition()+2;  // the +2 is for rounding and position tolerance
+                int tapePosInch = (int)(tapePos/encPerInch);
+                tapePos = (int)(encPerInch*(tapePosInch+1));
+                tapeMotor.setTargetPosition(tapePos);
+                tapeMotor.setPower(1);
+            }
+            X_previous=gamepad1.x;
+
             telemetry.addData("tapePos", tapePos);
             telemetry.addData("motoPos", tapeMotor.getCurrentPosition());
             telemetry.addData("Status", "Run Time: " + runtime.toString());
             telemetry.update();
         }
     }
+
+    public void overrideMotorSettings(DcMotorEx mtr) {
+        // This will assure the motor is configured like a RevRoboticsCoreHexMotor regardless of the RC config
+        MotorConfigurationType motorCfg = mtr.getMotorType().clone();
+        // put a breakpoint in here to see all the motor settings.  See also:
+        // https://github.com/OpenFTC/Extracted-RC/tree/master/Hardware/src/main/java/com/qualcomm/hardware/motors
+        motorCfg.setAchieveableMaxRPMFraction(0.85);
+        motorCfg.setGearing(36.25);
+        motorCfg.setMaxRPM(137);
+        motorCfg.setOrientation(Rotation.CCW);
+        motorCfg.setTicksPerRev(288);
+        mtr.setMotorType(motorCfg);
+
+        mtr.setPIDCoefficients(DcMotorEx.RunMode.RUN_USING_ENCODER, new PIDCoefficients(10,3,0));
+        mtr.setPIDCoefficients(DcMotorEx.RunMode.RUN_TO_POSITION, new PIDCoefficients(10,0.05,0));
+    }
 }
+
+//        mtr.setVelocityPIDFCoefficients(10,3,0,0);
+//        mtr.setPositionPIDFCoefficients(20);
+
+        /* GoBilda
+        motorCfg.setAchieveableMaxRPMFraction(0.85);
+        motorCfg.setGearing(99.5);
+        motorCfg.setMaxRPM(60.0);
+        motorCfg.setOrientation(Rotation.CCW);
+        motorCfg.setTicksPerRev(2786.0);
+        */
 
 // https://github.com/FIRST-Tech-Challenge/FtcRobotController/issues/322
 // https://github.com/OpenFTC/Extracted-RC/blob/master/Hardware/src/main/java/com/qualcomm/hardware/motors/RevRoboticsCoreHexMotor.java
@@ -106,5 +123,4 @@ public class elliot2 extends LinearOpMode {
 //@ExpansionHubMotorControllerPositionParams(P=10, I=0.05, D=0)
 //@DeviceProperties(xmlTag="RevRoboticsCoreHexMotor", name="@string/rev_core_hex_name", builtIn = true)
 //@DistributorInfo(distributor="@string/rev_distributor", model="REV-41-1300", url="http://www.revrobotics.com/rev-41-1300")
-
 //https://ftc9929.com/2019/12/16/stress-free-ftc-hardware-configurations/
