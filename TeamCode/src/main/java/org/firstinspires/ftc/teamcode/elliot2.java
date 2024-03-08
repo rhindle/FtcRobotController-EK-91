@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.PIDCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
@@ -20,6 +21,8 @@ public class elliot2 extends LinearOpMode {
     DcMotorEx tapeMotor;  //, testMotor;
     float encPerInch = 31.4F;
     boolean manualControl = true;
+    int tapeEncoder = 0;
+    final int maxPos = (int)(24 * encPerInch);
 
     @Override
     public void runOpMode() {
@@ -46,22 +49,30 @@ public class elliot2 extends LinearOpMode {
 
         while (opModeIsActive()) {
 
+            tapeEncoder = tapeMotor.getCurrentPosition();
+
             double motorPower = gamepad1.right_trigger - gamepad1.left_trigger;
 
             if (motorPower!=0) {
                 if (tapeMotor.getMode()!= DcMotorEx.RunMode.RUN_USING_ENCODER) {
                     tapeMotor.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
                 }
+                if (tapeEncoder<=0 && motorPower<0 && !gamepad1.left_bumper) motorPower=0;
+                if (tapeEncoder>=maxPos && motorPower>0) motorPower=0;
                 tapeMotor.setPower(motorPower);
                 manualControl = true;
             }
             if (motorPower==0 && manualControl) tapeMotor.setPower(0);
-
+            if (gamepad1.b) {
+                tapeMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                tapeEncoder = 0;
+            }
             if (gamepad1.y && !Y_previous){
                 manualControl = false;  //oops
                 tapeMotor.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
-                tapePos = tapeMotor.getCurrentPosition();
+                tapePos = tapeEncoder;
                 tapePos+=(int)encPerInch;
+                tapePos = Math.min(tapePos, maxPos);
                 tapeMotor.setTargetPosition(tapePos);
                 tapeMotor.setPower(1);
             }
@@ -70,19 +81,20 @@ public class elliot2 extends LinearOpMode {
             if (gamepad1.x && !X_previous){
                 if (manualControl) {
                     manualControl = false;
-                    tapeMotor.setTargetPosition(tapeMotor.getCurrentPosition());
+                    tapeMotor.setTargetPosition(tapeEncoder);
                     tapeMotor.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
                 }
                 tapePos = tapeMotor.getTargetPosition()+2;  // the +2 is for rounding and position tolerance
                 int tapePosInch = (int)(tapePos/encPerInch);
                 tapePos = (int)(encPerInch*(tapePosInch+1));
+                tapePos = Math.min(tapePos, maxPos);
                 tapeMotor.setTargetPosition(tapePos);
                 tapeMotor.setPower(1);
             }
             X_previous=gamepad1.x;
 
             telemetry.addData("tapePos", tapePos);
-            telemetry.addData("motoPos", tapeMotor.getCurrentPosition());
+            telemetry.addData("motoPos", tapeEncoder);
             telemetry.addData("Status", "Run Time: " + runtime.toString());
             telemetry.update();
         }
