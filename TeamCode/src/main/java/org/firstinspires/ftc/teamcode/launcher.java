@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.hardware.ServoControllerEx;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 @TeleOp (name="launcher", group="Proto")
@@ -17,6 +18,7 @@ public class launcher extends LinearOpMode {
     public void runOpMode() {
 
         boolean Y_previous=false;
+        boolean back_previous=false;
         servoSwing =hardwareMap.get(Servo.class,"servo0B");
         servoTrigger =hardwareMap.get(Servo.class,"servo1B");
         double servoAngle=0.59;
@@ -53,6 +55,15 @@ public class launcher extends LinearOpMode {
             } else {
                 servoTrigger.setPosition(.482);
             }
+
+            if (gamepad1.back && !back_previous){
+                // toggle whether the servo is enabled
+                ServoControllerEx controller = (ServoControllerEx) servoSwing.getController();
+                int servoPort = servoSwing.getPortNumber();
+                if (controller.isServoPwmEnabled(servoPort)) controller.setServoPwmDisable(servoPort);
+                else controller.setServoPwmEnable(servoPort);
+            }
+            back_previous=gamepad1.back;
 
 
             telemetry.addData("SwingPosition", servoAngle);
