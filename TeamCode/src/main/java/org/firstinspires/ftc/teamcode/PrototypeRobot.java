@@ -37,7 +37,7 @@ public class PrototypeRobot extends LinearOpMode {
 
       // Wait for the game to start (Display Gyro value), and reset gyro before we move..
       while (!isStarted()) {
-         robot.buttonMgr.loop();
+         robot.buttonMgr.runLoop();
          telemetry.addData(">", "Robot Heading = %.1f", robot.returnImuHeading(true));
          telemetry.update();
          sleep(100);
@@ -50,7 +50,7 @@ public class PrototypeRobot extends LinearOpMode {
       while (opModeIsActive()) {
 
          robot.loop();  // this will take care of clearing out the bulk reads
-         robot.buttonMgr.loop();
+         robot.buttonMgr.runLoop();
 
          controls.loop();
          robot.navigator.loop();

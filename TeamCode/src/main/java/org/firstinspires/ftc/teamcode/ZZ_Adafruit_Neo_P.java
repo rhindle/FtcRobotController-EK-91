@@ -125,7 +125,7 @@ public class ZZ_Adafruit_Neo_P extends LinearOpMode {
         // run until the end of the match (driver presses STOP)
         while (opModeIsActive()) {
             robot.loop();  // this will take care of clearing out the bulk reads
-            buttonMgr.loop();
+            buttonMgr.runLoop();
             neo.loop();
 
             if (System.currentTimeMillis() >= lastAnimUpdate + animUpdateInterval) {

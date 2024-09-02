@@ -8,14 +8,9 @@ public class ButtonMgr {
     public LinearOpMode opMode;
     public Gamepad gamepad1;
     public Gamepad gamepad2;
-
     public ControlData[] controlData;
+    int tapTime = 500;             // less than = tap, greater than = hold
 
-    int tapTime = 500;
-
-    ////////////////
-    //constructors//
-    ////////////////
     public ButtonMgr(LinearOpMode opMode){
         construct(opMode);
     }
@@ -34,7 +29,7 @@ public class ButtonMgr {
         }
     }
 
-    public void loop() {
+    public void runLoop() {
         updateAll();
     }
 
@@ -109,7 +104,7 @@ public class ButtonMgr {
     }
 
     int getIndex(int controller, Buttons button){
-        //This converts an index of 0-27 based on the controller 1-2 and button 0-13
+        //This converts an index of 0-31 based on the controller 1-2 and button 0-15
         if (controller < 1 || controller > 2) controller = 0; else controller--;
         return controller * Buttons.values().length + button.ordinal();
     }
@@ -118,29 +113,19 @@ public class ButtonMgr {
         return controlData[getIndex(controller, button)];
     }
 
-    public enum Buttons {  //must match what is in getReading's switch block
-        dpad_up,
-        dpad_down,
-        dpad_left,
-        dpad_right,
-        a,
-        b,
-        x,
-        y,
-        start,
-        back,
-        left_bumper,
-        right_bumper,
-        left_stick_button,
-        right_stick_button;
-    }
-
-    public static class cButton {
-        int controller;
-        Buttons button;
-        public cButton(int controller, Buttons button){
-            this.controller = controller;
-            this.button = button;
+    public boolean getState(int controller, Buttons button, State state) {
+        switch (state) {
+            //must match the elements in the Actions enum
+            case isPressed:         return controlData[getIndex(controller, button)].lastStatus;
+            case wasPressed:        return controlData[getIndex(controller, button)].wasPressed;
+            case wasReleased:       return controlData[getIndex(controller, button)].wasReleased;
+            case wasTapped:         return controlData[getIndex(controller, button)].wasTapped;
+            case isHeld:            return controlData[getIndex(controller, button)].isHeld;
+            case wasHeld:           return controlData[getIndex(controller, button)].wasHeld;
+            case wasSingleTapped:   return controlData[getIndex(controller, button)].wasSingleTapped;
+            case wasDoubleTapped:   return controlData[getIndex(controller, button)].wasDoubleTapped;
+            case isSingleTapHeld:   return controlData[getIndex(controller, button)].isSingleTapHeld;
+            default:                return false;
         }
     }
 
@@ -149,17 +134,17 @@ public class ButtonMgr {
         Buttons name;
         boolean lastStatus;
         long lastTime;
-        boolean wasTapped;
-        boolean isHeld;
-        boolean wasHeld;
-        boolean wasPressed;
-        boolean wasReleased;
-        boolean wasSingleTapped;
-        boolean wasDoubleTapped;
-        boolean isSingleTapHeld;
+        boolean wasPressed;          // Rise
+        boolean wasReleased;         // Fall
+        boolean isHeld;              // Rise + Long Hold (> tapTime)
+        boolean wasHeld;             // Rise + Long Hold (> tapTime) + Fall
+        boolean wasTapped;           // Rise + Short Hold (< tapTime) + Fall
+        boolean wasSingleTapped;     // Rise + Short Hold (< tapTime) + Fall + Gap (> tapTime)
+        boolean wasDoubleTapped;     // Rise + Short Hold (< tapTime) + Fall + Short Gap (< tapTime) x2
+        boolean isSingleTapHeld;     // Rise + Short Hold (< tapTime) + Fall + Short Gap (< tapTime) + Rise + Long Hold (> tapTime)
         char tapEventCounter;
 
-        public void initData(int index)  //object
+        public void initData(int index)
         {
             this.index = index;
             name = Buttons.values()[index % Buttons.values().length];
@@ -186,7 +171,7 @@ public class ButtonMgr {
                 gpad = gamepad1;
             }
             switch (Buttons.values()[index]) {
-                //must match the elements in the GPbuttons enum
+                //MUST match the elements in the Buttons enum
                 case dpad_up:             return gpad.dpad_up;
                 case dpad_down:           return gpad.dpad_down;
                 case dpad_left:           return gpad.dpad_left;
@@ -201,6 +186,8 @@ public class ButtonMgr {
                 case right_bumper:        return gpad.right_bumper;
                 case left_stick_button:   return gpad.left_stick_button;
                 case right_stick_button:  return gpad.right_stick_button;
+                case left_trigger:        return gpad.left_trigger==1;       // this will treat the triggers like digital buttons
+                case right_trigger:       return gpad.right_trigger==1;
                 default:                  return false;  //something bad happened
             }
         }
@@ -228,8 +215,6 @@ public class ButtonMgr {
                     tapEventCounter = 0;
                 }
                 lastTime = currentTime;          // reset the time
-            } else {
-                //nothing
             }
             if (lastStatus && !currentState) {   // change from pressed to not pressed
                 wasReleased = true;              // this will last for one loop!
@@ -246,8 +231,6 @@ public class ButtonMgr {
                     tapEventCounter = 0;
                 }
                 lastTime = currentTime;          // reset the time
-            } else {
-                //nothing
             }
             if (lastStatus && currentState) {    // still held
                 if (deltaTime >= tapTime) {
@@ -268,5 +251,45 @@ public class ButtonMgr {
             }
             lastStatus = currentState;
         }
+    }
+
+    public static class cButton {
+        int controller;
+        Buttons button;
+        public cButton(int controller, Buttons button){
+            this.controller = controller;
+            this.button = button;
+        }
+    }
+
+    public enum Buttons {  //must match what is in ControlData.getReading's switch block
+        dpad_up,
+        dpad_down,
+        dpad_left,
+        dpad_right,
+        a,
+        b,
+        x,
+        y,
+        start,
+        back,
+        left_bumper,
+        right_bumper,
+        left_stick_button,
+        right_stick_button,
+        left_trigger,
+        right_trigger
+    }
+
+    public enum State {
+        isPressed,
+        wasPressed,
+        wasReleased,
+        wasTapped,
+        isHeld,
+        wasHeld,
+        wasSingleTapped,
+        wasDoubleTapped,
+        isSingleTapHeld
     }
 }
